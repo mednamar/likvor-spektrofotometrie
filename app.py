@@ -56,9 +56,8 @@ if st.button("Spočítat výsledky"):
     df["diff"] = df["absorbance"] - df["baseline"]
 
     try:
-        nba = round(float(df[df.wavelength == 476]["diff"].values[0]), 5)
-        noa = round(float(df[df.wavelength == 415]["diff"].values[0]), 5)
-
+        nba_val = df[df.wavelength == 476]["diff"].values[0]
+        noa_val = df[df.wavelength == 415]["diff"].values[0]
 
         if pd.isna(nba_val) or pd.isna(noa_val):
             st.error("Chyba: Nejsou zadány nebo chybí potřebné hodnoty absorbance pro 415 nm a 476 nm.")
