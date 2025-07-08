@@ -56,67 +56,70 @@ if st.button("Spočítat výsledky"):
     df["diff"] = df["absorbance"] - df["baseline"]
 
     try:
-        nba_val = df[df.wavelength == 476]["diff"].values[0]
-        noa_val = df[df.wavelength == 415]["diff"].values[0]
-
-        if pd.isna(nba_val) or pd.isna(noa_val):
-            st.error("Chyba: Nejsou zadány nebo chybí potřebné hodnoty absorbance pro 415 nm a 476 nm.")
+        if 415 not in df.wavelength.values or 476 not in df.wavelength.values:
+            st.error("Chyba: Nejsou zadány hodnoty pro 415 nm nebo 476 nm.")
         else:
-            nba = round(float(nba_val), 5)
-            noa = round(float(noa_val), 5)
+            nba_val = df[df.wavelength == 476]["diff"].values[0]
+            noa_val = df[df.wavelength == 415]["diff"].values[0]
 
-            st.header("3. Výsledky výpočtu")
-            st.write(f"**NBA (476 nm):** {nba:.5f} AU")
-            st.write(f"**NOA (415 nm):** {noa:.5f} AU")
+            if pd.isna(nba_val) or pd.isna(noa_val):
+                st.error("Chyba: Hodnoty pro 415 nm nebo 476 nm obsahují NaN.")
+            else:
+                nba = round(float(nba_val), 5)
+                noa = round(float(noa_val), 5)
 
-            pa = (csf_prot / serum_prot) * serum_bil * 0.042
-            nba_corr = nba - pa
-            st.write(f"**PA (předpokládaná absorbance):** {pa:.5f} AU")
-            st.write(f"**Adjusted NBA:** {nba_corr:.5f} AU")
+                st.header("3. Výsledky výpočtu")
+                st.write(f"**NBA (476 nm):** {nba:.5f} AU")
+                st.write(f"**NOA (415 nm):** {noa:.5f} AU")
 
-            st.header("4. Interpretace")
-            interpretation = ""
-            if nba <= 0.007 and noa <= 0.02:
-                interpretation = "Negativní nález. SAH nepodporuje."
-            elif nba <= 0.007 and 0.02 < noa < 0.1:
-                interpretation = "Oxyhemoglobin přítomen, ale bilirubin nezvýšen. SAH nepodporuje."
-            elif nba <= 0.007 and noa >= 0.1:
-                interpretation = "Vysoký oxyhemoglobin může maskovat bilirubin. Výsledek nejednoznačný."
-            elif nba > 0.007:
-                if serum_bil > 20 and csf_prot <= 1.0:
-                    if nba_corr > 0.007:
-                        interpretation = "Zvýšený bilirubin po korekci. Výsledek konzistentní se SAH."
+                pa = (csf_prot / serum_prot) * serum_bil * 0.042
+                nba_corr = nba - pa
+                st.write(f"**PA (předpokládaná absorbance):** {pa:.5f} AU")
+                st.write(f"**Adjusted NBA:** {nba_corr:.5f} AU")
+
+                st.header("4. Interpretace")
+                interpretation = ""
+                if nba <= 0.007 and noa <= 0.02:
+                    interpretation = "Negativní nález. SAH nepodporuje."
+                elif nba <= 0.007 and 0.02 < noa < 0.1:
+                    interpretation = "Oxyhemoglobin přítomen, ale bilirubin nezvýšen. SAH nepodporuje."
+                elif nba <= 0.007 and noa >= 0.1:
+                    interpretation = "Vysoký oxyhemoglobin může maskovat bilirubin. Výsledek nejednoznačný."
+                elif nba > 0.007:
+                    if serum_bil > 20 and csf_prot <= 1.0:
+                        if nba_corr > 0.007:
+                            interpretation = "Zvýšený bilirubin po korekci. Výsledek konzistentní se SAH."
+                        else:
+                            interpretation = "Bilirubin pravděpodobně způsoben zvýšeným sérovým bilirubinem. SAH nepodporuje."
+                    elif csf_prot > 1.0:
+                        interpretation = "Zvýšený bilirubin. Možný SAH, ale výsledek interpretovat opatrně."
                     else:
-                        interpretation = "Bilirubin pravděpodobně způsoben zvýšeným sérovým bilirubinem. SAH nepodporuje."
-                elif csf_prot > 1.0:
-                    interpretation = "Zvýšený bilirubin. Možný SAH, ale výsledek interpretovat opatrně."
-                else:
-                    interpretation = "Zvýšený bilirubin. Výsledek konzistentní se SAH."
+                        interpretation = "Zvýšený bilirubin. Výsledek konzistentní se SAH."
 
-            st.success(f"Interpretace: {interpretation}")
+                st.success(f"Interpretace: {interpretation}")
 
-            st.header("5. Graf absorbance a baseline")
-            fig, ax = plt.subplots()
-            ax.plot(df.wavelength, df.absorbance, label="Absorbance")
-            ax.plot(df.wavelength, df.baseline, '--', label="Baseline")
-            ax.axvline(415, color='red', linestyle='--', label='415 nm (NOA)')
-            ax.axvline(476, color='blue', linestyle='--', label='476 nm (NBA)')
+                st.header("5. Graf absorbance a baseline")
+                fig, ax = plt.subplots()
+                ax.plot(df.wavelength, df.absorbance, label="Absorbance")
+                ax.plot(df.wavelength, df.baseline, '--', label="Baseline")
+                ax.axvline(415, color='red', linestyle='--', label='415 nm (NOA)')
+                ax.axvline(476, color='blue', linestyle='--', label='476 nm (NBA)')
 
-            y415 = df[df.wavelength == 415].absorbance.values[0]
-            b415 = df[df.wavelength == 415].baseline.values[0]
-            y476 = df[df.wavelength == 476].absorbance.values[0]
-            b476 = df[df.wavelength == 476].baseline.values[0]
+                y415 = df[df.wavelength == 415].absorbance.values[0]
+                b415 = df[df.wavelength == 415].baseline.values[0]
+                y476 = df[df.wavelength == 476].absorbance.values[0]
+                b476 = df[df.wavelength == 476].baseline.values[0]
 
-            ax.vlines(x=415, ymin=b415, ymax=y415, color='red')
-            ax.vlines(x=476, ymin=b476, ymax=y476, color='blue')
+                ax.vlines(x=415, ymin=b415, ymax=y415, color='red')
+                ax.vlines(x=476, ymin=b476, ymax=y476, color='blue')
 
-            ax.set_xlabel("Vlnová délka (nm)")
-            ax.set_ylabel("Absorbance (AU)")
-            ax.legend()
-            ax.grid(True)
-            st.pyplot(fig)
+                ax.set_xlabel("Vlnová délka (nm)")
+                ax.set_ylabel("Absorbance (AU)")
+                ax.legend()
+                ax.grid(True)
+                st.pyplot(fig)
 
-            st.caption("Baseline určená lineární regresí mezi 370–400 a 430–530 nm.")
+                st.caption("Baseline určená lineární regresí mezi 370–400 a 430–530 nm.")
 
     except Exception as e:
         st.error(f"Došlo k chybě při výpočtu: {str(e)}")
