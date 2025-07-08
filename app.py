@@ -68,14 +68,12 @@ if st.button("Spočítat výsledky"):
     base2 = np.polyfit(df[(df.wavelength >= 430) & (df.wavelength <= 530)].wavelength,
                       df[(df.wavelength >= 430) & (df.wavelength <= 530)].absorbance, 1)
 
-    baseline = []
+        baseline = []
     for wl in df.wavelength:
         if wl <= 400:
             baseline.append(np.polyval(base1, wl))
-        elif wl >= 430:
-            baseline.append(np.polyval(base2, wl))
         else:
-            baseline.append(np.nan)
+            baseline.append(np.polyval(base2, wl))
 
     df["baseline"] = baseline
     df["diff"] = df["absorbance"] - df["baseline"]
