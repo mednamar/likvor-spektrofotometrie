@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import io
 
 st.set_page_config(page_title="Spektrofotometrie likvoru – Výpočet NBA a NOA")
 st.title("Spektrofotometrie likvoru – Výpočet NBA a NOA")
@@ -13,18 +14,42 @@ Tento nástroj umožňuje:
 - provést korekci NBA při zvýšeném bilirubinu
 - zobrazit interpretaci výsledku dle národní směrnice
 - zobrazit grafické znázornění s baseline, tangenty a úsečkami
+- uložit a načíst zadaná data mezi relacemi nebo z CSV
 """)
 
-st.header("1. Zadejte hodnoty absorbance")
-wavelengths = [370, 380, 390, 400, 410, 415, 420, 430, 440, 450, 460, 470, 476, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600]
-abs_data = {wl: 0.000 for wl in wavelengths}
+if "abs_data" not in st.session_state:
+    wavelengths = [370, 380, 390, 400, 410, 415, 420, 430, 440, 450, 460, 470, 476, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600]
+    st.session_state.abs_data = {wl: 0.000 for wl in wavelengths}
+    st.session_state.wavelengths = wavelengths
 
+st.header("1. Zadejte hodnoty absorbance")
 abs_table = st.data_editor(
-    pd.DataFrame({"Vlnová délka (nm)": wavelengths, "Absorbance (AU)": [abs_data[wl] for wl in wavelengths]}),
+    pd.DataFrame({"Vlnová délka (nm)": st.session_state.wavelengths, "Absorbance (AU)": [st.session_state.abs_data[wl] for wl in st.session_state.wavelengths]}),
     num_rows="fixed",
     use_container_width=True,
     key="abs_table_editor"
 )
+
+st.download_button(
+    "💾 Uložit data jako CSV",
+    data=abs_table.to_csv(index=False).encode("utf-8"),
+    file_name="absorbance_data.csv",
+    mime="text/csv"
+)
+
+uploaded_file = st.file_uploader("📂 Načíst data z CSV souboru", type=["csv"])
+if uploaded_file is not None:
+    df_uploaded = pd.read_csv(uploaded_file)
+    if "Vlnová délka (nm)" in df_uploaded.columns and "Absorbance (AU)" in df_uploaded.columns:
+        abs_table = df_uploaded.copy()
+        st.success("Data byla úspěšně načtena z CSV.")
+    else:
+        st.error("CSV musí obsahovat sloupce 'Vlnová délka (nm)' a 'Absorbance (AU)'.")
+
+if st.button("🔁 Resetovat zadání"):
+    for wl in st.session_state.wavelengths:
+        st.session_state.abs_data[wl] = 0.000
+    st.experimental_rerun()
 
 st.header("2. Zadejte biochemické parametry")
 col1, col2, col3 = st.columns(3)
